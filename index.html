@@ -37,6 +37,9 @@ button{box-shadow:inset 0 1px 0 #ffffff55,inset 0 -2px 3px #0005,0 2px 4px #0008
 .info{flex:1;font-size:12px;line-height:1.6}.info input{width:100%}
 body.rush #board{box-shadow:0 0 0 1px #222,0 0 26px #ff2bd6,0 0 40px #ffd000}body.rush #lcd{animation:rushg .5s linear infinite}@keyframes rushg{50%{filter:brightness(1.4) hue-rotate(40deg)}}
 #lcdvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:1}body.rush #res{background:linear-gradient(#0003,#000b)!important;text-shadow:0 0 3px #000,0 0 3px #000,0 0 2px #000}
+#dlamp{position:absolute;left:2%;top:1.2%;width:21%;padding:2px 4px;border-radius:4px;background:#0a0a14;box-shadow:inset 0 0 0 1px #000,0 0 0 2px #888,0 0 0 3px #333,0 3px 6px #000a;z-index:4;pointer-events:none;font:700 clamp(8px,2.3vw,11px)/1.2 ui-monospace,Menlo,monospace;color:#9fd}
+#dlamp div{display:flex;justify-content:space-between;gap:3px}#dlamp span{color:#ddd;font-size:.95em}#dlamp b{color:#ff4a2a;text-shadow:0 0 4px #f40;font-variant-numeric:tabular-nums}
+#dlamp div:first-child b{color:#ff5cf0;text-shadow:0 0 4px #f0f}
 #seg{position:absolute;right:2%;top:1.2%;width:30%;aspect-ratio:3.2/1;border-radius:4px;background:#120306;box-shadow:inset 0 0 0 1px #000,inset 0 2px 6px #000,0 0 0 2px #888,0 0 0 3px #333,0 3px 6px #000a;z-index:4;pointer-events:none}
 #bhud{display:none;position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:40;background:linear-gradient(#2a0a12,#120306);border:1px solid #c33;border-radius:10px;padding:2px 10px;font:900 13px monospace;color:#ff5a3a;text-shadow:0 0 6px #f40;box-shadow:0 2px 6px #000a;pointer-events:none;white-space:nowrap}
 .bmodal{display:none;position:fixed;inset:0;z-index:60;background:#000b;align-items:center;justify-content:center;padding:10px}
@@ -72,7 +75,7 @@ body.rush #board{box-shadow:0 0 0 1px #222,0 0 26px #ff2bd6,0 0 40px #ffd000}bod
 <div><button id="battleBtn">⚔バトル</button> <button id="refill">🎱玉補充(無料)</button> <button id="bgmBtn"></button> <button id="vidBtn"></button></div></header>
 <div id="wrap"><div id="plate"><b>確率表記</b><span>大当たり抽選確率（ヘソ入賞1回ごと・架空の遊技です）</span><span class="od">UR 0.1%｜SSR 0.3%｜SR 5%｜R 34.6%｜N 60%</span><span style="font-size:9px">※LR(レジェンドレア)はURの内数 約0.0143%</span></div><div id="board"><div id="inner"><canvas id="cv"></canvas>
 <div id="lcd"><div id="idle">🎰 ヘソを狙え！<br><small style="font-size:6cqw">UR0.1% SSR0.3% SR5%</small></div><div id="orb"></div><video id="lcdvid" muted loop playsinline webkit-playsinline preload="auto"></video><div id="res"></div><div id="lrtxt"><div class="l1">ＬＲ！</div><div class="l2">確定！</div><div class="l3">（+α）</div></div><div id="hype"></div></div>
-<canvas id="seg" aria-label="ラウンド表示"></canvas><div id="hold"><i></i><i></i><i></i><i></i></div></div></div></div>
+<canvas id="seg" aria-label="ラウンド表示"></canvas><div id="dlamp" aria-label="データカウンター"><div><span>LR</span><b id="dLR">0</b></div><div><span>UR</span><b id="dUR">0</b></div><div><span>SSR</span><b id="dSSR">0</b></div><div><span>回転</span><b id="dROT">0</b></div></div><div id="hold"><i></i><i></i><i></i><i></i></div></div></div></div>
 <div id="ctrl"><div id="handleBox"><div id="handle"><div id="knob"></div><span>長押しで発射</span></div></div>
 <div class="info">打ち出し強さ <b id="pw"></b>%<br><input id="pwr" type="range" min="0" max="100" value="55" aria-label="打ち出し強さ"><br>
 <label><input type="checkbox" id="lock" style="width:auto"> 連射固定</label>　音量 <input id="vol" type="range" min="0" max="100" value="45" style="width:70px;vertical-align:middle" aria-label="音量"><br><small>ハンドルを回して強さ調整・押してる間連射 ※全部架空・実費0円</small></div></div></div>
@@ -215,7 +218,7 @@ for(let k=0;k<=st;k++){at(hs2+k*STEP,()=>hype(k));at(hs2+k*STEP+HOLD,()=>{$("hyp
 if(shown<2)at(tc,showColor);
 const doPromo=()=>{$("hype").innerHTML='<span class="h4 slam">昇 格 ！！</span>';orb.classList.remove("shatter");void orb.offsetWidth;orb.classList.add("shatter");orb.style.background=oc(best);orb.style.boxShadow=orbSh(COL[br],120);shatSnd();flash("#fff");shake();burst(br,120)};
 if(promo)at(tc+400,doPromo);
-const finish=()=>{skipFn=null;const isLR=g[2]===LR_ITEM;LASTPULL="best="+(isLR?"LR":br)+" shown="+RANK[shown]+" st="+st+" sak="+sak+(bita?" bita":"")+" vidGo="+(best>=4&&ST.vid);SPINLOG.push(LASTPULL);vidThen(best>=4,()=>{intense=false;$("hype").innerHTML="";orb.style.display="none";if(best>=2){flash(best>=4?"#fff":COL[br]);shake();burst(br)}if(best>=3)setTimeout(()=>burst(br),300);if(best>=4){rain();setTimeout(()=>burst("UR"),600)}fanfare(br);if(isLR){LAMP.lr=1;[1047,1319,1568,2093,2637].forEach((f,i)=>{bell(f,1.4+i*.12,1.2,.08);tone(f/2,1.4+i*.12,.6,"sawtooth",.05)});setTimeout(()=>{burst("SSR",150);rain()},900)}LAMP.spin=0;LAMP.lv=0;if(best>=2){LAMP.win=performance.now()+4000}if(best===3){TULIP_FLASH=performance.now()+3500;[0,.35,.7,1.05].forEach(d=>bell(2637,d,.4,.05))}
+const finish=()=>{skipFn=null;const isLR=g[2]===LR_ITEM;LASTPULL="best="+(isLR?"LR":br)+" shown="+RANK[shown]+" st="+st+" sak="+sak+(bita?" bita":"")+" vidGo="+(best>=4&&ST.vid);SPINLOG.push(LASTPULL);dataCount(isLR0?"LR":br);vidThen(best>=4,()=>{intense=false;$("hype").innerHTML="";orb.style.display="none";if(best>=2){flash(best>=4?"#fff":COL[br]);shake();burst(br)}if(best>=3)setTimeout(()=>burst(br),300);if(best>=4){rain();setTimeout(()=>burst("UR"),600)}fanfare(br);if(isLR){LAMP.lr=1;[1047,1319,1568,2093,2637].forEach((f,i)=>{bell(f,1.4+i*.12,1.2,.08);tone(f/2,1.4+i*.12,.6,"sawtooth",.05)});setTimeout(()=>{burst("SSR",150);rain()},900)}LAMP.spin=0;LAMP.lv=0;if(best>=2){LAMP.win=performance.now()+4000}if(best===3){TULIP_FLASH=performance.now()+3500;[0,.35,.7,1.05].forEach(d=>bell(2637,d,.4,.05))}
 const pay=PAY[br];res.innerHTML=`<div class="ic pop">${g[1]}</div><div class="rr c${br} pop">${isLR?"👑LR降臨👑<br><span style=\"font-size:.6em\">LEGEND RARE</span>":best>=4?"🌈UR降臨🌈":best>=3?"SSR小当り！":best>=2?"SR当たり！":br}</div><div class="nm">${g[2]}</div><div class="pay">${isLR?"LEGEND RUSH！ 10R×30秒":best>=4?"RUSH突入！ 3R×30秒":pay?"+"+pay.toLocaleString()+"玉":"ハズレ…"}</div>`;res.style.display="flex";
 if(pay)payout(pay);
 setTimeout(()=>{if(best>=4){startRush(isLR,freeze);return}res.style.display="none";if(!HOLDQ.length)$("idle").style.display="";busy=false;spin()},best>=4?3000:best>=2?2600:1300)})};
@@ -299,7 +302,13 @@ $("bclose").onclick=()=>$("bsetup").style.display="none";
 $("bmin").oninput=e=>{let v=String(e.target.value).replace(/\D/g,"").slice(0,3);e.target.value=v};
 $("bset").onclick=()=>{const m=Math.max(1,Math.min(999,parseInt($("bmin").value,10)||0));$("bmin").value=m;Object.assign(BATTLE,{state:"armed",min:m,refills:0});$("bsetup").style.display="none";bHud()};
 $("bcancel").onclick=()=>{if(BATTLE.state==="armed"){BATTLE.state="off";bHud()}$("bsetup").style.display="none"};
-function battleStart(){Object.assign(BATTLE,{state:"running",start:Date.now(),endAt:performance.now()+BATTLE.min*BATTLE_UNIT,startBalls:PK.balls,paid0:PK.paid,refills:0});[784,1047,1568].forEach((f,i)=>bell(f,i*.08,.5,.07))}
+// data counter: LR counts as LR only (not UR); 回転 = lotteries since last UR/LR (the hitting spin resets to 0)
+const DCK="sanzaiData";let DC=(()=>{try{const o=JSON.parse(LS.get(DCK)||"null");if(o&&typeof o==="object")return Object.assign({LR:0,UR:0,SSR:0,rot:0},o)}catch(e){}return{LR:0,UR:0,SSR:0,rot:0}})();window.DC=DC;
+function renderData(){$("dLR").textContent=DC.LR;$("dUR").textContent=DC.UR;$("dSSR").textContent=DC.SSR;$("dROT").textContent=DC.rot}
+function dataCount(k){if(k==="LR"||k==="UR"){DC[k]++;DC.rot=0}else{if(k==="SSR")DC.SSR++;DC.rot++}LS.set(DCK,JSON.stringify(DC));renderData()}
+function dataReset(){Object.assign(DC,{LR:0,UR:0,SSR:0,rot:0});LS.set(DCK,JSON.stringify(DC));renderData()}
+renderData();
+function battleStart(){dataReset();Object.assign(BATTLE,{state:"running",start:Date.now(),endAt:performance.now()+BATTLE.min*BATTLE_UNIT,startBalls:PK.balls,paid0:PK.paid,refills:0});[784,1047,1568].forEach((f,i)=>bell(f,i*.08,.5,.07))}
 function bHud(){const h=$("bhud");if(BATTLE.state==="off"){h.style.display="none";return}h.style.display="block";
 h.textContent=BATTLE.state==="armed"?`⚔ 待機 ${battleClock()}（1発目でスタート）`:BATTLE.state==="running"?`⚔ 残り ${battleClock()}`:(RUSH.on?"⚔ 時間切れ：RUSH消化中（打ち出し可）":`⚔ 時間切れ：保留消化中 ${HOLDQ.length}`)+(BATTLE.idleLeft<BATTLE_IDLE_MS-4000?`｜無操作で終了まで ${Math.ceil(BATTLE.idleLeft/1000)}秒`:"");if(0)h.textContent=RUSH.on?"":`⚔ 時間切れ：保留消化中 ${HOLDQ.length}`}
 setInterval(()=>{if(BATTLE.state==="running"&&performance.now()>=BATTLE.endAt){BATTLE.state="over";BATTLE.overAt=Date.now();IDLE_REF=performance.now();firing=false;$("lock").checked=false}
