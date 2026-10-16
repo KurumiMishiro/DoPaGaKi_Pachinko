@@ -43,6 +43,7 @@ button{box-shadow:inset 0 1px 0 #ffffff55,inset 0 -2px 3px #0005,0 2px 4px #0008
 .info{flex:1;font-size:12px;line-height:1.6}.info input{width:100%}
 body.rush #board{box-shadow:0 0 0 1px #222,0 0 26px #ff2bd6,0 0 40px #ffd000}body.rush #lcd{animation:rushg .5s linear infinite}@keyframes rushg{50%{filter:brightness(1.4) hue-rotate(40deg)}}
 #lcdvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:1}body.rush #res{background:linear-gradient(#0003,#000b)!important;text-shadow:0 0 3px #000,0 0 3px #000,0 0 2px #000}
+#seg{position:absolute;right:2%;top:1.2%;width:30%;aspect-ratio:3.2/1;border-radius:4px;background:#120306;box-shadow:inset 0 0 0 1px #000,inset 0 2px 6px #000,0 0 0 2px #888,0 0 0 3px #333,0 3px 6px #000a;z-index:4;pointer-events:none}
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;transition:opacity .4s}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:30}
 .shake{animation:sh .5s}@keyframes sh{20%{transform:translate(-5px,3px) rotate(-1deg)}40%{transform:translate(5px,-4px) rotate(1deg)}60%{transform:translate(-4px,-2px)}80%{transform:translate(3px,4px)}}
@@ -60,9 +61,9 @@ body.rush #board{box-shadow:0 0 0 1px #222,0 0 26px #ff2bd6,0 0 40px #ffd000}bod
 </style></head><body>
 <div id="app"><header><h1 id="title">💸散財パチンコ💸</h1><div class="bal">持ち玉 <b id="balls"></b> 玉<br><small>累計払い出し <span id="paid"></span></small></div>
 <div><button id="refill">🎱玉補充(無料)</button> <button id="bgmBtn"></button> <button id="vidBtn"></button></div></header>
-<div id="wrap"><div id="plate"><b>確率表記</b><span>大当たり抽選確率（ヘソ入賞1回ごと・架空の遊技です）</span><span class="od">UR 0.1%｜SSR 0.3%｜SR 5%｜R 34.6%｜N 60%</span></div><div id="board"><div id="inner"><canvas id="cv"></canvas>
+<div id="wrap"><div id="plate"><b>確率表記</b><span>大当たり抽選確率（ヘソ入賞1回ごと・架空の遊技です）</span><span class="od">UR 0.1%｜SSR 0.3%｜SR 5%｜R 34.6%｜N 60%</span><span style="font-size:9px">※LR(レジェンドレア)はURの内数 約0.0143%</span></div><div id="board"><div id="inner"><canvas id="cv"></canvas>
 <div id="lcd"><div id="idle">🎰 ヘソを狙え！<br><small style="font-size:6cqw">UR0.1% SSR0.3% SR5%</small></div><div id="orb"></div><video id="lcdvid" muted loop playsinline webkit-playsinline preload="auto"></video><div id="res"></div><div id="hype"></div></div>
-<div id="hold"><i></i><i></i><i></i><i></i></div></div></div></div>
+<canvas id="seg" aria-label="ラウンド表示"></canvas><div id="hold"><i></i><i></i><i></i><i></i></div></div></div></div>
 <div id="ctrl"><div id="handleBox"><div id="handle"><div id="knob"></div><span>長押しで発射</span></div></div>
 <div class="info">打ち出し強さ <b id="pw"></b>%<br><input id="pwr" type="range" min="0" max="100" value="55" aria-label="打ち出し強さ"><br>
 <label><input type="checkbox" id="lock" style="width:auto"> 連射固定</label>　音量 <input id="vol" type="range" min="0" max="100" value="45" style="width:70px;vertical-align:middle" aria-label="音量"><br><small>ハンドルを回して強さ調整・押してる間連射 ※全部架空・実費0円</small></div></div></div>
@@ -139,6 +140,7 @@ if(b<=1)return[b,-1];if(b==2)return[2,0];
 if(b==3)return[Math.random()<.35?2:3,hi()];
 if(r<.2)return[[2,3,4][Math.floor(Math.random()*3)],4];
 if(r<.4)return Math.random()<.5?[2,-1]:[3,0];
+if(r<.5)return[0,0];// ノーマルリーチビタ系: white + チャンス, no development (UR only)
 const q=Math.random();return[q<.2?2:q<.6?3:4,hi()]}
 window.HYPELOG=[];
 // ===== video (Blob URL, muted inline, tap-to-play fallback) =====
@@ -166,19 +168,19 @@ function rain(){for(let i=0;i<150;i++)P.push({x:Math.random()*fcv.width,y:-Math.
 function flash(c){const f=$("flash");f.style.background=c||"#fff";f.style.transition="none";f.style.opacity=.7;requestAnimationFrame(()=>{f.style.transition="opacity .6s";f.style.opacity=0})}
 function shake(){const b=$("lcd");b.classList.remove("shake");void b.offsetWidth;b.classList.add("shake")}
 // ===== lottery (ported) + hold queue =====
-let FORCE="";
-function roll(){if(FORCE){const k=FORCE;FORCE="";const pool=ITEMS.filter(i=>i[0]===k);return pool[Math.floor(Math.random()*pool.length)]}
+let FORCE="",FORCEPLAN=null;const LR_ITEM="深淵の蒼き機体 ABYSS-X31S";
+function roll(){if(FORCE==="LR"){FORCE="";return ITEMS.find(i=>i[2]===LR_ITEM)}if(FORCE){const k=FORCE;FORCE="";const pool=ITEMS.filter(i=>i[0]===k);return pool[Math.floor(Math.random()*pool.length)]}
 let r=Math.random()*100,acc=0;for(const k of["UR","SSR","SR","R","N"]){acc+=RW[k];if(r<acc){const pool=ITEMS.filter(i=>i[0]===k);return pool[Math.floor(Math.random()*pool.length)]}}return ITEMS[0]}
 const HOLDQ=[];let busy=false,skipFn=null;window.SPINLOG=[];
 function renderHold(){[...$("hold").children].forEach((e,i)=>e.classList.toggle("on",i<HOLDQ.length))}
 function hesoIn(){sHeso();addBalls(HESO_PAY);if(RUSH.on){RUSH.hesoDuring++;return}if(HOLDQ.length>=HOLD_MAX)return;HOLDQ.push(roll());renderHold();if(!busy)setTimeout(spin,250)}
 function spin(){if(busy||!HOLDQ.length)return;busy=true;const g=HOLDQ.shift();renderHold();PK.spins++;LAMP.spin=1;LAMP.lv=0;S.pulls++;S.inv[g[2]]=(S.inv[g[2]]||0)+1;save();
 const best=RANK.indexOf(g[0]),br=g[0];const orb=$("orb"),res=$("res");$("idle").style.display="none";res.style.display="none";
-const [shown,st]=plan(best);
+let FP=FORCEPLAN;FORCEPLAN=null;const [shown,st]=FP||plan(best);const bita=best>=4&&shown===0&&st===0;
 const sak=best>=3&&Math.random()<.1;if(sak){kyuin();const bk=$("black");bk.style.transition="none";bk.style.opacity=1;setTimeout(()=>{bk.style.transition="opacity .6s";bk.style.opacity=0;flash("#fff")},350)}
 HYPELOG.push({best,shown,st,sak});orb.style.display="block";
 const oc=orbBG,orbc=oc(shown);
-const STEP=2000,HOLD=1500,promo=shown<best,T=[];let skipped=false;
+const STEP=2000,HOLD=1500,promo=shown<best&&!bita,T=[];let skipped=false;
 orb.style.background=oc(0);orb.style.boxShadow=orbSh("#fff8",50);orb.classList.remove("shatter");const hs=1000+(sak?400:0);
 const colorT=shown>=2?hs:0;const hs2=hs+(shown>=2?900:0);
 const tc=hs2+(st+1)*STEP+(st>=0?200:0);const dur=tc+(promo?1800:600);sfxBuild(Math.min(dur,8000)/1000);duck(dur+2500);
@@ -189,10 +191,10 @@ for(let k=0;k<=st;k++){at(hs2+k*STEP,()=>hype(k));at(hs2+k*STEP+HOLD,()=>{$("hyp
 if(shown<2)at(tc,showColor);
 const doPromo=()=>{$("hype").innerHTML='<span class="h4 slam">昇 格 ！！</span>';orb.classList.remove("shatter");void orb.offsetWidth;orb.classList.add("shatter");orb.style.background=oc(best);orb.style.boxShadow=orbSh(COL[br],120);shatSnd();flash("#fff");shake();burst(br,120)};
 if(promo)at(tc+400,doPromo);
-const finish=()=>{skipFn=null;LASTPULL="best="+br+" shown="+RANK[shown]+" st="+st+" sak="+sak+" vidGo="+(best>=4&&ST.vid);SPINLOG.push(LASTPULL);vidThen(best>=4,()=>{intense=false;$("hype").innerHTML="";orb.style.display="none";if(best>=2){flash(best>=4?"#fff":COL[br]);shake();burst(br)}if(best>=3)setTimeout(()=>burst(br),300);if(best>=4){rain();setTimeout(()=>burst("UR"),600)}fanfare(br);LAMP.spin=0;LAMP.lv=0;if(best>=2){LAMP.win=performance.now()+4000}if(best===3){TULIP_FLASH=performance.now()+3500;[0,.35,.7,1.05].forEach(d=>bell(2637,d,.4,.05))}
-const pay=PAY[br];res.innerHTML=`<div class="ic pop">${g[1]}</div><div class="rr c${br} pop">${best>=4?"🌈UR降臨🌈":best>=3?"SSR小当り！":best>=2?"SR当たり！":br}</div><div class="nm">${g[2]}</div><div class="pay">${best>=4?"RUSH突入！ 3R×30秒":pay?"+"+pay.toLocaleString()+"玉":"ハズレ…"}</div>`;res.style.display="flex";
+const finish=()=>{skipFn=null;const isLR=g[2]===LR_ITEM;LASTPULL="best="+(isLR?"LR":br)+" shown="+RANK[shown]+" st="+st+" sak="+sak+(bita?" bita":"")+" vidGo="+(best>=4&&ST.vid);SPINLOG.push(LASTPULL);vidThen(best>=4,()=>{intense=false;$("hype").innerHTML="";orb.style.display="none";if(best>=2){flash(best>=4?"#fff":COL[br]);shake();burst(br)}if(best>=3)setTimeout(()=>burst(br),300);if(best>=4){rain();setTimeout(()=>burst("UR"),600)}fanfare(br);if(isLR){LAMP.lr=1;[1047,1319,1568,2093,2637].forEach((f,i)=>{bell(f,1.4+i*.12,1.2,.08);tone(f/2,1.4+i*.12,.6,"sawtooth",.05)});setTimeout(()=>{burst("SSR",150);rain()},900)}LAMP.spin=0;LAMP.lv=0;if(best>=2){LAMP.win=performance.now()+4000}if(best===3){TULIP_FLASH=performance.now()+3500;[0,.35,.7,1.05].forEach(d=>bell(2637,d,.4,.05))}
+const pay=PAY[br];res.innerHTML=`<div class="ic pop">${g[1]}</div><div class="rr c${br} pop">${isLR?"👑LR降臨👑<br><span style=\"font-size:.6em\">LEGEND RARE</span>":best>=4?"🌈UR降臨🌈":best>=3?"SSR小当り！":best>=2?"SR当たり！":br}</div><div class="nm">${g[2]}</div><div class="pay">${isLR?"LEGEND RUSH！ 10R×30秒":best>=4?"RUSH突入！ 3R×30秒":pay?"+"+pay.toLocaleString()+"玉":"ハズレ…"}</div>`;res.style.display="flex";
 if(pay)payout(pay);
-setTimeout(()=>{if(best>=4){startRush();return}res.style.display="none";if(!HOLDQ.length)$("idle").style.display="";busy=false;spin()},best>=4?3000:best>=2?2600:1300)})};
+setTimeout(()=>{if(best>=4){startRush(isLR);return}res.style.display="none";if(!HOLDQ.length)$("idle").style.display="";busy=false;spin()},best>=4?3000:best>=2?2600:1300)})};
 at(dur,finish);skipFn=()=>{if(skipped)return;skipped=true;T.forEach(clearTimeout);$("hype").innerHTML="";intense=false;showColor();if(promo)doPromo();setTimeout(finish,promo?700:200)}}
 $("lcd").addEventListener("click",()=>{if(skipFn)skipFn()});
 function addBalls(n){PK.balls+=n;PK.paid+=n;save()}
@@ -218,7 +220,7 @@ const ATK={x:200,y:424,hw:24,open:0,pay:15,cnt:0};
 // three attackers in a gentle U: center lowest, sides higher & outward
 const ATKS=[{x:100,y:404,hw:17,wl:13,wr:5,cnt:0,name:"L"},{x:200,y:424,hw:38,wl:20,wr:20,cnt:0,name:"C"},{x:300,y:404,hw:17,wl:5,wr:13,cnt:0,name:"R"}];window.ATKS=ATKS;
 const WING=20;// open flap length
-function atkSegs(a,open){return open?[[a.x-a.hw,a.y,a.x-a.hw-a.wl*.75,a.y-a.wl],[a.x+a.hw,a.y,a.x+a.hw+a.wr*.75,a.y-a.wr]]:[[a.x-a.hw-3,a.y-3,a.x+a.hw+3,a.y-3]]}
+function atkSegs(a,open){return open?[[a.x-a.hw,a.y,a.x-a.hw-a.wl*.75,a.y-a.wl],[a.x+a.hw,a.y,a.x+a.hw+a.wr*.75,a.y-a.wr]]:[a.name==="L"?[a.x-a.hw-3,a.y-10,a.x+a.hw+3,a.y-3]:a.name==="R"?[a.x-a.hw-3,a.y-3,a.x+a.hw+3,a.y-10]:[a.x-a.hw-3,a.y-3,a.x+a.hw+3,a.y-3]]}
 function collideSeg(b,ax,ay,bx,by,e){const dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;let u=((b.x-ax)*dx+(b.y-ay)*dy)/L2;u=Math.max(0,Math.min(1,u));const px=ax+u*dx,py=ay+u*dy,ex=b.x-px,ey=b.y-py,d=Math.hypot(ex,ey),m=BR+1.2;if(d>=m||d===0)return 0;const nx=ex/d,ny=ey/d;b.x=px+nx*m;b.y=py+ny*m;const vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=(1+e)*vn*nx;b.vy-=(1+e)*vn*ny;return -vn}return 0}
 const WM=[{x:104,y:150,a:0,w:3},{x:296,y:150,a:0,w:-3}],WMR=9;
 // guide nails for heso / pockets / attacker
@@ -226,7 +228,7 @@ const WM=[{x:104,y:150,a:0,w:3},{x:296,y:150,a:0,w:-3}],WMR=9;
 POCKETS.forEach(p=>[[-8.6,-6],[8.6,-6]].forEach(([a,b])=>addN(p.x+a,p.y+b)));
 ATKS.forEach(a=>{if(a.name==="C"){addN(a.x-a.hw-16,a.y-20);addN(a.x+a.hw+16,a.y-20);addN(a.x,a.y-30);return}
 // side attackers: short slanted guide rows that roll most balls inward toward the center attacker (backups only catch some)
-const sgn=a.name==="R"?1:-1;for(let k=0;k<9;k++)addN(200+sgn*(146-k*11.5),358+k*5)});
+const sgn=a.name==="R"?1:-1;for(let k=0;k<6;k++)addN(200+sgn*(146-k*18.4),358+k*8)});
 // 天釘: arched row above the LCD frame
 for(let x=146;x<=254;x+=14)addN(x,96-Math.cos((x-200)/60)*4+4);
 // 風車上: small hats over each windmill
@@ -252,20 +254,33 @@ BALLS.push({x:SPAWN.x,y:SPAWN.y,vx:SPAWN.tx*v,vy:SPAWN.ty*v,still:0});stats.laun
 function collideCircle(b,px,py,pr,e){const dx=b.x-px,dy=b.y-py,d2=dx*dx+dy*dy,m=pr+BR;if(d2>=m*m||d2===0)return false;const d=Math.sqrt(d2),nx=dx/d,ny=dy/d;b.x=px+nx*m;b.y=py+ny*m;const vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=(1+e)*vn*nx;b.vy-=(1+e)*vn*ny;b.vx+=(Math.random()-.5)*12;return -vn}return 0}
 let lastWmS=0;function sWm(){if(!AC)return;const n=AC.currentTime;if(n-lastWmS<.06)return;lastWmS=n;tone(900+Math.random()*300,0,.04,"square",.03);noise(0,.03,.06,2000)}
 function sAtk(){[3136,3951,4699].forEach((f,i)=>bell(f,i*.045,.5,.06))}
+// ===== 7-segment LED (top-right of cabinet) =====
+const SEGMAP={"0":"abcdef","1":"bc","2":"abdeg","3":"abcdg","4":"bcfg","5":"acdfg","6":"acdefg","7":"abc","8":"abcdefg","9":"abcdfg","-":"g","R":"eg","r":"eg","P":"abefg","E":"adefg","L":"def","d":"bcdeg","+":"+","/":"/"," ":"","t":"defg"};
+function drawSeg(){const c=$("seg");if(!c)return;const r=c.getBoundingClientRect(),d=Math.min(3,devicePixelRatio||1);if(c.width!==(r.width*d|0)){c.width=r.width*d|0;c.height=r.height*d|0}const g=c.getContext("2d"),W2=c.width,H2=c.height;g.clearRect(0,0,W2,H2);
+let l1,l2,on;if(RUSH.on&&RUSH.phase!=="end"){const rr=String(RUSH.round).padStart(2,"0"),tot=String(RUSH.total);l1="R"+rr+"/"+String(RUSH.ROUNDS).padStart(2,"0");l2=(RUSH.phase==="open"?String(Math.ceil(RUSH.rem||0)).padStart(2,"0"):"--")+" +"+tot.padStart(4," ").slice(-5);on=RUSH.lr?"#ffb400":"#ff2a1a"}
+else{l1=" "+String(Math.min(9999999,Math.floor(PK.balls))).padStart(7," ");l2="--------";on="#ff5a1a"}
+const rows=[l1.padEnd(8).slice(0,8),l2.padEnd(8).slice(0,8)];window.SEGTXT=rows.join("|");const cw=W2/8.4,ch=H2/2.3;
+rows.forEach((txt,ri)=>{for(let k=0;k<8;k++){const x0=cw*.3+k*cw,y0=ch*.2+ri*ch*1.1;segChar(g,txt[k],x0,y0,cw*.78,ch*.86,on)}})}
+function segChar(g,chr,x,y,w,h,on){const sk=w*.12,t=Math.max(1.2,w*.13),m=h/2,act=SEGMAP[chr]||"";
+const S={a:[[x+t,y],[x+w-t,y]],b:[[x+w,y+t],[x+w,y+m-t/2]],c:[[x+w,y+m+t/2],[x+w,y+h-t]],d:[[x+t,y+h],[x+w-t,y+h]],e:[[x,y+m+t/2],[x,y+h-t]],f:[[x,y+t],[x,y+m-t/2]],g:[[x+t,y+m],[x+w-t,y+m]]};
+g.lineCap="round";g.lineWidth=t;const sh=(p)=>[p[0]+sk*(1-(p[1]-y)/h),p[1]];
+for(const k in S){const lit=act.includes(k);g.strokeStyle=lit?on:"rgba(255,60,30,.09)";g.shadowColor=on;g.shadowBlur=lit?t*1.5:0;const [p,q]=[sh(S[k][0]),sh(S[k][1])];g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1]);g.stroke()}
+g.shadowBlur=0;if(chr==="+"||chr==="/"){g.strokeStyle=on;g.shadowColor=on;g.shadowBlur=t;g.beginPath();if(chr==="+"){g.moveTo(x+w*.5+sk*.5,y+h*.25);g.lineTo(x+w*.5+sk*.5,y+h*.75);g.moveTo(x+w*.2+sk*.5,y+m);g.lineTo(x+w*.8+sk*.5,y+m)}else{g.moveTo(x+w*.9+sk,y+h*.1);g.lineTo(x+w*.1,y+h*.9)}g.stroke();g.shadowBlur=0}}
+setInterval(drawSeg,100);
 // ===== RUSH (UR): 3 rounds x 30s bonus flap, heso lotteries paused =====
 let TULIP_FLASH=0;window.LCDVLOG=[];
-function lcdVidStart(){if(!ST.vid)return;const v=$("lcdvid");try{v.muted=true;v.loop=true;v.playsInline=true;if(!v.src||v.src!==$("vid").src)v.src=$("vid").src;v.style.display="block";v.currentTime=0;const p=v.play();if(p&&p.catch)p.then(()=>LCDVLOG.push("playing")).catch(e=>{LCDVLOG.push("rejected:"+e.name);v.style.display="none"})}catch(e){LCDVLOG.push("err")}}
+function lcdVidStart(){const v=$("lcdvid");try{v.muted=true;v.loop=true;v.playsInline=true;if(!v.src||v.src!==$("vid").src)v.src=$("vid").src;v.style.display="block";v.currentTime=0;const p=v.play();if(p&&p.catch)p.then(()=>LCDVLOG.push("playing")).catch(e=>{LCDVLOG.push("rejected:"+e.name)})}catch(e){LCDVLOG.push("err")}}
 function lcdVidStop(){const v=$("lcdvid");try{v.pause()}catch(e){}v.style.display="none"}
 const RUSH={on:0,round:0,phase:"",total:0,hesoDuring:0,iv:0,ROUNDS:3,OPEN_MS:30000,GAP_MS:2000};window.RUSH=RUSH;window.RUSHLOG=[];
 function rushOpen(){RUSH.phase="open";ATK.open=performance.now()+RUSH.OPEN_MS;RUSHLOG.push("open R"+RUSH.round);[784,1047,1319,1568].forEach((f,i)=>tone(f,i*.08,.2,"square",.08));flash("#ff0");burst("UR",60)}
-function startRush(){Object.assign(RUSH,{on:1,round:1,total:0,hesoDuring:0});document.body.classList.add("rush");intense=true;lcdVidStart();rushOpen();const res=$("res");res.style.display="flex";
+function startRush(lr){Object.assign(RUSH,{on:1,round:1,total:0,hesoDuring:0,lr:!!lr,ROUNDS:lr?10:3});LAMP.lr=lr?1:0;document.body.classList.add("rush");intense=true;lcdVidStart();rushOpen();const res=$("res");res.style.display="none";res.innerHTML="";
 RUSH.iv=setInterval(()=>{const now=performance.now();LAMP.win=now+400;
 if(RUSH.phase==="open"&&now>=ATK.open){if(RUSH.round<RUSH.ROUNDS){RUSH.phase="gap";RUSH.gapEnd=now+RUSH.GAP_MS;RUSHLOG.push("close R"+RUSH.round)}else{endRush();return}}
 if(RUSH.phase==="gap"&&now>=RUSH.gapEnd){RUSH.round++;rushOpen()}
 const rem=RUSH.phase==="open"?Math.max(0,(ATK.open-now)/1000):0;
-res.innerHTML=`<div class="rr cUR">🌈RUSH🌈</div><div class="rr" style="font-size:11cqh">ROUND ${RUSH.round}/${RUSH.ROUNDS}</div><div class="nm">${RUSH.phase==="open"?"アタッカー開放中 残り "+rem.toFixed(1)+"秒":"インターバル…"}</div><div class="pay">+${RUSH.total.toLocaleString()}玉</div>`},100)}
-function endRush(){clearInterval(RUSH.iv);lcdVidStop();ATK.open=0;RUSH.phase="end";RUSHLOG.push("end total="+RUSH.total);intense=false;document.body.classList.remove("rush");fanfare("UR");rain();burst("UR",150);sJara(RUSH.total);LAMP.win=performance.now()+4000;
-const res=$("res");res.innerHTML=`<div class="rr cUR pop">RUSH終了</div><div class="nm">3ラウンド 総獲得</div><div class="pay pop">+${RUSH.total.toLocaleString()}玉</div>`;
+RUSH.rem=rem;const v=$("lcdvid");if(v.paused&&!RUSH.vkick){RUSH.vkick=1;v.play().catch(()=>{}).finally(()=>RUSH.vkick=0)}},100)}
+function endRush(){clearInterval(RUSH.iv);lcdVidStop();LAMP.lr=0;const res0=$("res");res0.style.display="flex";ATK.open=0;RUSH.phase="end";RUSHLOG.push("end total="+RUSH.total);intense=false;document.body.classList.remove("rush");fanfare("UR");rain();burst("UR",150);sJara(RUSH.total);LAMP.win=performance.now()+4000;
+const res=$("res");res.innerHTML=`<div class="rr cUR pop">${RUSH.lr?"LEGEND RUSH終了":"RUSH終了"}</div><div class="nm">${RUSH.ROUNDS}ラウンド 総獲得</div><div class="pay pop">+${RUSH.total.toLocaleString()}玉</div>`;
 setTimeout(()=>{RUSH.on=0;res.style.display="none";if(!HOLDQ.length)$("idle").style.display="";busy=false;spin()},3500)}
 function openAtk(best){const sec=[0,0,6,12,20][best]||0;if(!sec)return;ATK.open=performance.now()+sec*1000;[784,1047,1319].forEach((f,i)=>tone(f,i*.08,.2,"square",.08))}
 function inPocket(b,x,y,hw){return Math.abs(b.x-x)<hw&&b.y>y-3&&b.y<y+6&&b.vy>0}
@@ -349,7 +364,7 @@ g.strokeStyle="#ddd";g.lineWidth=3;g.beginPath();g.moveTo(SPAWN.x-6,H);g.lineTo(
 BG=c}
 // ----- lamps -----
 const LAMP={spin:0,lv:0,win:0};window.LAMP=LAMP;
-function lampCol(i,n,t){if(t<LAMP.win)return (Math.floor(t/90)+i)%2?`hsl(${(i*40+t/3)%360},100%,60%)`:"#fff";
+function lampCol(i,n,t){if(LAMP.lr&&t<LAMP.win)return (Math.floor(t/80)+i)%3===0?`hsl(${(i*40+t/3)%360},100%,60%)`:((Math.floor(t/80)+i)%3===1?"#ffd700":"#fff6c0");if(t<LAMP.win)return (Math.floor(t/90)+i)%2?`hsl(${(i*40+t/3)%360},100%,60%)`:"#fff";
 if(LAMP.lv>0)return (Math.floor(t/70)+i)%3?HC[Math.min(4,LAMP.lv-1)]:"#fff";
 if(LAMP.spin)return (Math.floor(t/110)+i)%4==0?"#ff0":"#a40";
 return (Math.floor(t/400)+i)%6==0?"#ffd":(i%2?"#f60":"#d22")}
@@ -382,7 +397,7 @@ const op=t<ATK.open;for(const a of ATKS){cx.fillStyle="#1a1a22";cx.beginPath();c
 const fl=a.fl>0;if(fl)a.fl-=.04;const col=op?((t/120|0)%2||fl?"#ff0":"#f0a"):"#c33";
 if(op){cx.strokeStyle=col;cx.lineWidth=2.6;cx.lineCap="round";for(const sg of atkSegs(a,1)){cx.beginPath();cx.moveTo(sg[0],sg[1]);cx.lineTo(sg[2],sg[3]);cx.stroke()}cx.lineCap="butt";
 for(let k=0;k<5;k++){cx.fillStyle=lampCol(k,5,t);cx.beginPath();cx.arc(a.x-a.hw+4+k*(a.hw*2-8)/4,a.y+3,1.4,0,6.283);cx.fill()}}
-else{const lg=cx.createLinearGradient(0,a.y-5,0,a.y+1);lg.addColorStop(0,"#ff7a7a");lg.addColorStop(1,"#900");cx.fillStyle=lg;cx.fillRect(a.x-a.hw-3,a.y-5,a.hw*2+6,a.name==="C"?9:5);if(a.name==="C"){cx.save();cx.font="italic 900 7px sans-serif";cx.textAlign="center";cx.textBaseline="middle";cx.lineWidth=2;cx.strokeStyle="#400";cx.strokeText("BONUS",a.x,a.y-0.5);cx.fillStyle="#ffe14a";cx.fillText("BONUS",a.x,a.y-0.5);cx.restore()}}
+else{const lg=cx.createLinearGradient(0,a.y-5,0,a.y+1);lg.addColorStop(0,"#ff7a7a");lg.addColorStop(1,"#900");cx.fillStyle=lg;if(a.name==="C")cx.fillRect(a.x-a.hw-3,a.y-5,a.hw*2+6,9);else{const sg=atkSegs(a,0)[0];cx.beginPath();cx.moveTo(sg[0],sg[1]-2);cx.lineTo(sg[2],sg[3]-2);cx.lineTo(sg[2],a.y+1);cx.lineTo(sg[0],a.y+1);cx.fill()}if(a.name==="C"){cx.save();cx.font="italic 900 7px sans-serif";cx.textAlign="center";cx.textBaseline="middle";cx.lineWidth=2;cx.strokeStyle="#400";cx.strokeText("BONUS",a.x,a.y-0.5);cx.fillStyle="#ffe14a";cx.fillText("BONUS",a.x,a.y-0.5);cx.restore()}}
 cx.fillStyle="#fff";cx.font="bold 6px sans-serif";cx.textAlign="center";if(op&&a.name==="C"){cx.save();cx.font="italic 900 5px sans-serif";cx.fillStyle="#ffe14a";for(const sg of atkSegs(a,1)){cx.save();cx.translate((sg[0]+sg[2])/2,(sg[1]+sg[3])/2);cx.rotate(Math.atan2(sg[3]-sg[1],sg[2]-sg[0])+(sg[2]<sg[0]?Math.PI:0));cx.fillText("BONUS",0,-2);cx.restore()}cx.restore()}
 if(a.name==="C"){cx.save();cx.font="bold 7px sans-serif";cx.lineWidth=2;cx.strokeStyle="#200";const lb=op?(RUSH.on?"RUSH R"+RUSH.round+" OPEN!":"BONUS OPEN!"):"BONUS";cx.strokeText(lb,a.x,a.y-12);cx.fillStyle=op?"#ff0":"#fff";cx.fillText(lb,a.x,a.y-12);cx.restore()}
 else cx.fillText(op?"OPEN!":"BONUS",a.x,a.y+15)}
