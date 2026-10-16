@@ -51,7 +51,7 @@ body.rush #board{box-shadow:0 0 0 1px #222,0 0 26px #ff2bd6,0 0 40px #ffd000}bod
 #lrtxt{position:absolute;inset:0;z-index:3;display:none;flex-direction:column;justify-content:center;padding:0 2cqw;pointer-events:none}
 #lrtxt .l1,#lrtxt .l2{font-weight:900;font-style:italic;font-size:31cqw;line-height:.88;letter-spacing:-.04em;text-align:left;white-space:nowrap;background:linear-gradient(90deg,red,#ff0,#0f0,#0ff,#00f,#f0f,red);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;-webkit-text-stroke:1.2px #fff;filter:drop-shadow(0 0 2px #000) drop-shadow(0 0 3px #000) drop-shadow(0 0 6px #fff8);animation:rbw 2s linear infinite}
 @keyframes rbw{to{background-position:200% 0}}
-#lrtxt .l3{font-weight:900;font-size:10cqw;color:#000;text-align:center;-webkit-text-stroke:.4px #fff;text-shadow:0 0 2px #fff,0 0 3px #fff,0 0 5px #fff;margin-top:0;line-height:1.1;display:none}
+#lrtxt .l3{font-weight:900;font-size:13cqw;color:#fff;text-align:center;-webkit-text-stroke:1px #000;paint-order:stroke fill;text-shadow:0 0 2px #000,0 0 3px #000,1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;margin-top:0;line-height:1.1;display:none}
 #lrtxt.plus .l3{display:block}
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;transition:opacity .4s}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:30}
@@ -293,7 +293,7 @@ $("title").addEventListener("click",cycleSenbare);
 cv.addEventListener("click",e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;if(Math.abs(x-CX)<84&&Math.abs(y-90)<15)cycleSenbare()});
 $("battleBtn").onclick=e=>{e.stopPropagation();openSetup()};
 $("babort").onclick=()=>{if(BATTLE.state==="off")return;if(!confirm("バトルを中断しますか？（結果は記録されず『中断』として履歴に残ります）"))return;const now=Date.now(),st=BATTLE.state==="armed"?now:BATTLE.start,el=Math.max(0,Math.round((now-st)/1000));
-const r={aborted:true,start:st,startStr:fmtDT(st),endStr:fmtDT(now),min:BATTLE.min,elapsed:el,state:BATTLE.state};const h=bHist();h.unshift(r);LS.set(BHK,JSON.stringify(h.slice(0,20)));BATTLE.state="off";BATTLE.last=r;$("bsetup").style.display="none";$("handle").classList.remove("off");bHud();toast("中断しました")};
+const r={aborted:true,start:st,startStr:fmtDT(st),endStr:fmtDT(now),min:BATTLE.min,elapsed:el,state:BATTLE.state};const h=bHist();h.unshift(r);LS.set(BHK,JSON.stringify(h.slice(0,20)));BATTLE.state="off";BATTLE.last=r;firing=false;$("lock").checked=false;$("bsetup").style.display="none";$("handle").classList.remove("off");bHud();toast("中断しました")};
 function toast(m){const d=document.createElement("div");d.textContent=m;d.style.cssText="position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:70;background:#000d;color:#fff;padding:10px 18px;border-radius:12px;font-weight:900;border:1px solid #b89a5a";document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
 $("bclose").onclick=()=>$("bsetup").style.display="none";
 $("bmin").oninput=e=>{let v=String(e.target.value).replace(/\D/g,"").slice(0,3);e.target.value=v};
