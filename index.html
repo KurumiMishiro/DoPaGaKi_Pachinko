@@ -37,6 +37,7 @@ button{box-shadow:inset 0 1px 0 #ffffff55,inset 0 -2px 3px #0005,0 2px 4px #0008
 .info{flex:1;font-size:12px;line-height:1.6}.info input{width:100%}
 body.rush #board{box-shadow:0 0 0 1px #222,0 0 26px #ff2bd6,0 0 40px #ffd000}body.rush #lcd{animation:rushg .5s linear infinite}@keyframes rushg{50%{filter:brightness(1.4) hue-rotate(40deg)}}
 #lcdvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:1}body.rush #res{background:linear-gradient(#0003,#000b)!important;text-shadow:0 0 3px #000,0 0 3px #000,0 0 2px #000}
+#mgmt{position:absolute;right:1.5%;bottom:1%;z-index:6;display:flex;flex-direction:column;gap:3px}#mgmt button{font:700 clamp(8px,2.2vw,10px)/1.1 sans-serif;padding:3px 6px;border-radius:6px;border:1px solid #888;background:#2a2238e6;color:#eee;box-shadow:0 1px 3px #000a;cursor:pointer;white-space:nowrap}#mgmt button:active{filter:brightness(1.4)}
 #dlamp{position:absolute;left:2%;top:1.2%;width:21%;padding:2px 4px;border-radius:4px;background:#0a0a14;box-shadow:inset 0 0 0 1px #000,0 0 0 2px #888,0 0 0 3px #333,0 3px 6px #000a;z-index:4;pointer-events:none;font:700 clamp(8px,2.3vw,11px)/1.2 ui-monospace,Menlo,monospace;color:#9fd}
 #dlamp div{display:flex;justify-content:space-between;gap:3px}#dlamp span{color:#ddd;font-size:.95em}#dlamp b{color:#ff4a2a;text-shadow:0 0 4px #f40;font-variant-numeric:tabular-nums}
 #dlamp div:first-child b{color:#ff5cf0;text-shadow:0 0 4px #f0f}
@@ -75,7 +76,7 @@ body.rush #board{box-shadow:0 0 0 1px #222,0 0 26px #ff2bd6,0 0 40px #ffd000}bod
 <div><button id="battleBtn">⚔バトル</button> <button id="refill">🎱玉補充(無料)</button> <button id="bgmBtn"></button> <button id="vidBtn"></button></div></header>
 <div id="wrap"><div id="plate"><b>確率表記</b><span>大当たり抽選確率（ヘソ入賞1回ごと・架空の遊技です）</span><span class="od">UR 0.1%｜SSR 0.3%｜SR 5%｜R 34.6%｜N 60%</span><span style="font-size:9px">※LR(レジェンドレア)はURの内数 約0.0143%</span></div><div id="board"><div id="inner"><canvas id="cv"></canvas>
 <div id="lcd"><div id="idle">🎰 ヘソを狙え！<br><small style="font-size:6cqw">UR0.1% SSR0.3% SR5%</small></div><div id="orb"></div><video id="lcdvid" muted loop playsinline webkit-playsinline preload="auto"></video><div id="res"></div><div id="lrtxt"><div class="l1">ＬＲ！</div><div class="l2">確定！</div><div class="l3">（+α）</div></div><div id="hype"></div></div>
-<canvas id="seg" aria-label="ラウンド表示"></canvas><div id="dlamp" aria-label="データカウンター"><div><span>LR</span><b id="dLR">0</b></div><div><span>UR</span><b id="dUR">0</b></div><div><span>SSR</span><b id="dSSR">0</b></div><div><span>回転</span><b id="dROT">0</b></div></div><div id="hold"><i></i><i></i><i></i><i></i></div></div></div></div>
+<canvas id="seg" aria-label="ラウンド表示"></canvas><div id="mgmt"><button id="resetBalls" title="持ち玉と累計払い出し玉を初期状態に戻します">持ち玉リセット</button><button id="clearHist" title="バトル履歴・データカウンター・統計を全削除します">履歴全削除</button></div><div id="dlamp" aria-label="データカウンター"><div><span>LR</span><b id="dLR">0</b></div><div><span>UR</span><b id="dUR">0</b></div><div><span>SSR</span><b id="dSSR">0</b></div><div><span>回転</span><b id="dROT">0</b></div></div><div id="hold"><i></i><i></i><i></i><i></i></div></div></div></div>
 <div id="ctrl"><div id="handleBox"><div id="handle"><div id="knob"></div><span>長押しで発射</span></div></div>
 <div class="info">打ち出し強さ <b id="pw"></b>%<br><input id="pwr" type="range" min="0" max="100" value="55" aria-label="打ち出し強さ"><br>
 <label><input type="checkbox" id="lock" style="width:auto"> 連射固定</label>　音量 <input id="vol" type="range" min="0" max="100" value="45" style="width:70px;vertical-align:middle" aria-label="音量"><br><small>ハンドルを回して強さ調整・押してる間連射 ※全部架空・実費0円</small></div></div></div>
@@ -290,7 +291,7 @@ const BHK="sanzaiBattleHist";const bHist=()=>{try{return JSON.parse(LS.get(BHK)|
 const fmtDT=t=>new Date(t).toLocaleString("ja-JP",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"});
 function battleRemain(){return BATTLE.state==="armed"?BATTLE.min*BATTLE_UNIT:BATTLE.state==="running"?Math.max(0,BATTLE.endAt-performance.now()):0}
 function battleClock(){const sec=Math.ceil(battleRemain()/1000),m=Math.floor(sec/60),ss=sec%60;return String(m).padStart(2,"0")+":"+String(ss).padStart(2,"0")}
-function renderBHist(){const h=bHist();$("bhist").innerHTML=h.length?h.map(r=>r.aborted?`${r.startStr.slice(5,16)} ${r.min}分｜中断（経過 ${Math.floor(r.elapsed/60)}分${r.elapsed%60}秒）`:`${r.startStr.slice(5,16)} ${r.min}分｜持ち玉 ${r.endBalls.toLocaleString()}｜払出 ${r.paid.toLocaleString()}｜補充 ${r.refills}回｜差 ${(r.net>=0?"+":"")+r.net.toLocaleString()}${r.note?"｜"+r.note:""}`).join("<br>"):"まだ記録なし"}
+function renderBHist(){const h=bHist();$("bhist").innerHTML=h.length?h.map(r=>r.aborted?`${r.startStr.slice(5,16)} ${r.min}分｜中断（経過 ${Math.floor(r.elapsed/60)}分${r.elapsed%60}秒）`:`${r.startStr.slice(5,16)} ${r.min}分｜持ち玉 ${r.endBalls.toLocaleString()}｜払出 ${r.paid.toLocaleString()}｜補充 ${r.refills}回｜差 ${(r.net>=0?"+":"")+r.net.toLocaleString()}${r.note?"｜"+r.note:""}${r.jp?`<br>　大当たり回数　LR${r.jp.LR}・UR${r.jp.UR}・SSR${r.jp.SSR}｜総回転数　${r.jp.spins}回転`:""}`).join("<br>"):"まだ記録なし"}
 function openSetup(){$("bstatus").textContent=BATTLE.state==="armed"?"待機中：最初の1発でスタート":BATTLE.state==="running"?"バトル進行中 残り "+battleClock():BATTLE.state==="over"?"終了処理中…":"";$("bcancel").style.display=BATTLE.state==="armed"?"":"none";$("bset").style.display=BATTLE.state==="off"?"":"none";$("babort").style.display=BATTLE.state==="off"?"none":"";renderBHist();$("bsetup").style.display="flex"}
 $("title").addEventListener("click",cycleSenbare);
 cv.addEventListener("click",e=>{const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*W,y=(e.clientY-r.top)/r.height*H;if(Math.abs(x-CX)<84&&Math.abs(y-90)<15)cycleSenbare()});
@@ -300,25 +301,30 @@ const r={aborted:true,start:st,startStr:fmtDT(st),endStr:fmtDT(now),min:BATTLE.m
 function toast(m){const d=document.createElement("div");d.textContent=m;d.style.cssText="position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:70;background:#000d;color:#fff;padding:10px 18px;border-radius:12px;font-weight:900;border:1px solid #b89a5a";document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
 $("bclose").onclick=()=>$("bsetup").style.display="none";
 $("bmin").oninput=e=>{let v=String(e.target.value).replace(/\D/g,"").slice(0,3);e.target.value=v};
-$("bset").onclick=()=>{const m=Math.max(1,Math.min(999,parseInt($("bmin").value,10)||0));$("bmin").value=m;Object.assign(BATTLE,{state:"armed",min:m,refills:0});$("bsetup").style.display="none";bHud()};
+$("bset").onclick=()=>{const m=Math.max(1,Math.min(999,parseInt($("bmin").value,10)||0));$("bmin").value=m;Object.assign(BATTLE,{state:"armed",min:m,refills:0});resetBallsNow();$("bsetup").style.display="none";bHud()};
 $("bcancel").onclick=()=>{if(BATTLE.state==="armed"){BATTLE.state="off";bHud()}$("bsetup").style.display="none"};
 // data counter: LR counts as LR only (not UR); 回転 = lotteries since last UR/LR (the hitting spin resets to 0)
 const DCK="sanzaiData";let DC=(()=>{try{const o=JSON.parse(LS.get(DCK)||"null");if(o&&typeof o==="object")return Object.assign({LR:0,UR:0,SSR:0,rot:0},o)}catch(e){}return{LR:0,UR:0,SSR:0,rot:0}})();window.DC=DC;
 function renderData(){$("dLR").textContent=DC.LR;$("dUR").textContent=DC.UR;$("dSSR").textContent=DC.SSR;$("dROT").textContent=DC.rot}
-function dataCount(k){if(k==="LR"||k==="UR"){DC[k]++;DC.rot=0}else{if(k==="SSR")DC.SSR++;DC.rot++}LS.set(DCK,JSON.stringify(DC));renderData()}
+function dataCount(k){if(BATTLE.jp&&(BATTLE.state==="running"||BATTLE.state==="over")){if(k in BATTLE.jp)BATTLE.jp[k]++;BATTLE.jp.spins++}if(k==="LR"||k==="UR"){DC[k]++;DC.rot=0}else{if(k==="SSR")DC.SSR++;DC.rot++}LS.set(DCK,JSON.stringify(DC));renderData()}
 function dataReset(){Object.assign(DC,{LR:0,UR:0,SSR:0,rot:0});LS.set(DCK,JSON.stringify(DC));renderData()}
 renderData();
-function battleStart(){dataReset();Object.assign(BATTLE,{state:"running",start:Date.now(),endAt:performance.now()+BATTLE.min*BATTLE_UNIT,startBalls:PK.balls,paid0:PK.paid,refills:0});[784,1047,1568].forEach((f,i)=>bell(f,i*.08,.5,.07))}
+function battleStart(){dataReset();Object.assign(BATTLE,{jp:{LR:0,UR:0,SSR:0,spins:0},state:"running",start:Date.now(),endAt:performance.now()+BATTLE.min*BATTLE_UNIT,startBalls:PK.balls,paid0:PK.paid,refills:0});[784,1047,1568].forEach((f,i)=>bell(f,i*.08,.5,.07))}
 function bHud(){const h=$("bhud");if(BATTLE.state==="off"){h.style.display="none";return}h.style.display="block";
 h.textContent=BATTLE.state==="armed"?`⚔ 待機 ${battleClock()}（1発目でスタート）`:BATTLE.state==="running"?`⚔ 残り ${battleClock()}`:(RUSH.on?"⚔ 時間切れ：RUSH消化中（打ち出し可）":`⚔ 時間切れ：保留消化中 ${HOLDQ.length}`)+(BATTLE.idleLeft<BATTLE_IDLE_MS-4000?`｜無操作で終了まで ${Math.ceil(BATTLE.idleLeft/1000)}秒`:"");if(0)h.textContent=RUSH.on?"":`⚔ 時間切れ：保留消化中 ${HOLDQ.length}`}
 setInterval(()=>{if(BATTLE.state==="running"&&performance.now()>=BATTLE.endAt){BATTLE.state="over";BATTLE.overAt=Date.now();IDLE_REF=performance.now();firing=false;$("lock").checked=false}
 if(BATTLE.state==="over"){const now=performance.now();if(busy&&!RUSH.on)IDLE_REF=now;IDLE_REF=Math.max(IDLE_REF,LAST_SHOT);BATTLE.idleLeft=Math.max(0,BATTLE_IDLE_MS-(now-IDLE_REF));if(BATTLE.idleLeft<=0){battleFinish(true);return}}
 if(BATTLE.state==="over"){$("handle").classList.toggle("off",!RUSH.on);if(!RUSH.on&&!busy&&!HOLDQ.length&&!BALLS.length)battleFinish()}else $("handle").classList.remove("off");bHud()},200);
 function battleFinish(forced){let note="";if(forced){note=RUSH.on?"強制終了（RUSH途中で無操作）":"強制終了（無操作）";if(RUSH.on){clearInterval(RUSH.iv);lcdVidStop();showLR(false);ATK.open=0;RUSH.on=0;RUSH.phase="";LAMP.lr=0;intense=false;document.body.classList.remove("rush");busy=false;$("res").style.display="none";$("idle").style.display=""}}
-const end=Date.now(),r={start:BATTLE.start,startStr:fmtDT(BATTLE.start),endStr:fmtDT(end),min:BATTLE.min,refills:BATTLE.refills,startBalls:Math.floor(BATTLE.startBalls),endBalls:Math.floor(PK.balls),paid:PK.paid-BATTLE.paid0};
+const end=Date.now(),r={start:BATTLE.start,startStr:fmtDT(BATTLE.start),endStr:fmtDT(end),min:BATTLE.min,refills:BATTLE.refills,startBalls:Math.floor(BATTLE.startBalls),endBalls:Math.floor(PK.balls),paid:PK.paid-BATTLE.paid0,jp:Object.assign({LR:0,UR:0,SSR:0,spins:0},BATTLE.jp||{})};
 r.net=r.endBalls-r.startBalls-r.refills*1000;r.note=note;BATTLE.state="off";BATTLE.last=r;const h=bHist();h.unshift(r);LS.set(BHK,JSON.stringify(h.slice(0,20)));
-$("rcard").innerHTML=`<div class="ttl">💸 出玉バトル 結果 💸</div>実践日時<b>${r.startStr}</b><br>終了時刻<b>${r.endStr}</b><br>制限時間<b>${r.min}分</b><br>玉補充回数<b>${r.refills}回</b><br>開始時持ち玉<b>${r.startBalls.toLocaleString()}玉</b><br>終了時持ち玉<b>${r.endBalls.toLocaleString()}玉</b><br>終了時払い出し玉<b>${r.paid.toLocaleString()}玉</b><br>差玉（補充除く）<b>${(r.net>=0?"+":"")+r.net.toLocaleString()}玉</b>${r.note?`<div style="color:#c00;font-weight:900;text-align:center">⚠ ${r.note}</div>`:""}<div style="font-size:10px;opacity:.6;text-align:center;margin-top:4px">脳汁ドパガキパチンコ ※架空・実費0円</div>`;
+$("rcard").innerHTML=`<div class="ttl">💸 出玉バトル 結果 💸</div>実践日時<b>${r.startStr}</b><br>終了時刻<b>${r.endStr}</b><br>制限時間<b>${r.min}分</b><br>玉補充回数<b>${r.refills}回</b><br>開始時持ち玉<b>${r.startBalls.toLocaleString()}玉</b><br>終了時持ち玉<b>${r.endBalls.toLocaleString()}玉</b><br>終了時払い出し玉<b>${r.paid.toLocaleString()}玉</b><br>差玉（補充除く）<b>${(r.net>=0?"+":"")+r.net.toLocaleString()}玉</b><br>大当たり回数<b>LR${r.jp.LR}・UR${r.jp.UR}・SSR${r.jp.SSR}</b><br>総回転数<b>${r.jp.spins.toLocaleString()}回転</b>${r.note?`<div style="color:#c00;font-weight:900;text-align:center">⚠ ${r.note}</div>`:""}<div style="font-size:10px;opacity:.6;text-align:center;margin-top:4px">脳汁ドパガキパチンコ ※架空・実費0円</div>`;
 $("bresult").style.display="flex";fanfare(r.net>=0?"SSR":"R")}
+const START_BALLS=1000;
+function resetBallsNow(){PK.balls=START_BALLS;PK.paid=0;save()}
+$("resetBalls").onclick=e=>{e.stopPropagation();if(BATTLE.state!=="off"){alert("バトル中は持ち玉リセットできません。");return}if(!confirm("持ち玉を"+START_BALLS.toLocaleString()+"玉に戻し、累計払い出し玉を0にします。よろしいですか？"))return;resetBallsNow();toast("持ち玉をリセットしました")};
+$("clearHist").onclick=e=>{e.stopPropagation();if(BATTLE.state!=="off"){alert("バトル中は履歴を削除できません。");return}if(!confirm("バトル履歴・データカウンター（LR/UR/SSR/回転数）・総回転数などの統計をすべて削除します。\n※持ち玉・設定・ガチャのコレクションは消えません。\nよろしいですか？"))return;
+LS.set(BHK,"[]");BATTLE.last=null;dataReset();PK.spins=0;save();SPINLOG.length=0;RUSHLOG.length=0;FREEZELOG.length=0;SENBARELOG.length=0;renderBHist();toast("履歴を全削除しました")};
 $("bdone").onclick=()=>{$("bresult").style.display="none";bHud()};
 // ===== 7-segment LED (top-right of cabinet) =====
 const SEGMAP={"0":"abcdef","1":"bc","2":"abdeg","3":"abcdg","4":"bcfg","5":"acdfg","6":"acdefg","7":"abc","8":"abcdefg","9":"abcdfg","-":"g","R":"eg","r":"eg","P":"abefg","E":"adefg","L":"def","d":"bcdeg","+":"+","/":"/",":":":","b":"cdefg","S":"acdfg"," ":"","t":"defg"};
@@ -438,8 +444,8 @@ if(LAMP.spin)return (Math.floor(t/110)+i)%4==0?"#ff0":"#a40";
 return (Math.floor(t/400)+i)%6==0?"#ffd":(i%2?"#f60":"#d22")}
 function draw(){if(!BG)buildBG();const t=performance.now();cx.setTransform(1,0,0,1,0,0);cx.drawImage(BG,0,0);cx.setTransform(cv.width/W,0,0,cv.height/H,0,0);
 // title (rainbow, slowly shifting)
-{const by=90,tx="脳汁パラダイス";cx.font='900 16px "Hiragino Kaku Gothic StdN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif';cx.textAlign="center";cx.textBaseline="middle";const tw=cx.measureText(tx).width,sc=Math.min(1,124/tw);
-cx.save();cx.translate(CX+6,by+1);cx.scale(sc,sc);const hw=tw/2,gr=cx.createLinearGradient(-hw,0,hw,0),o=(t/3000)%1;for(let k=0;k<=6;k++)gr.addColorStop(k/6,`hsl(${(k/6+o)*360%360},100%,58%)`);
+{const by=90,tx="P脳汁パラダイス";cx.font='900 16px "Hiragino Kaku Gothic StdN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif';cx.textAlign="center";cx.textBaseline="middle";const tw=cx.measureText(tx).width,sc=Math.min(1,124/tw);
+cx.save();cx.translate(CX,by+1);cx.scale(sc,sc);const hw=tw/2,gr=cx.createLinearGradient(-hw,0,hw,0),o=(t/3000)%1;for(let k=0;k<=6;k++)gr.addColorStop(k/6,`hsl(${(k/6+o)*360%360},100%,58%)`);
 cx.lineJoin="round";cx.lineWidth=5;cx.strokeStyle="#1a0630";cx.strokeText(tx,0,0);cx.lineWidth=2;cx.strokeStyle="#fff";cx.strokeText(tx,0,0);cx.fillStyle=gr;cx.fillText(tx,0,0);cx.restore();cx.textBaseline="alphabetic"}
 // rim lamps
 {const sa=(t/2600)%(Math.PI*2);const sg=cx.createRadialGradient(CX+Math.cos(sa)*(R+6),CY+Math.sin(sa)*(R+6),0,CX+Math.cos(sa)*(R+6),CY+Math.sin(sa)*(R+6),40);sg.addColorStop(0,"rgba(255,255,255,.75)");sg.addColorStop(1,"rgba(255,255,255,0)");cx.strokeStyle=sg;cx.lineWidth=12;cx.beginPath();cx.arc(CX,CY,R+6.5,sa-.35,sa+.35);cx.stroke()}
@@ -496,7 +502,7 @@ hb.addEventListener("wheel",e=>{e.preventDefault();setPower(+$("pwr").value-Math
 addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();firing=true}if(e.key==="ArrowUp")setPower(+$("pwr").value+2);if(e.key==="ArrowDown")setPower(+$("pwr").value-2)});
 addEventListener("keyup",e=>{if(e.code==="Space")firing=false});
 $("refill").onclick=()=>{if(BATTLE.state==="running"||BATTLE.state==="over")BATTLE.refills++;PK.balls+=1000;save();sJara(200);flash("#0f8")};
-function renderToggles(){$("bgmBtn").textContent=ST.bgm?"🎵BGM ON":"🔇BGM OFF";$("vidBtn").textContent=ST.vid?"🎬動画 ON":"🎬動画 OFF";$("bgmBtn").setAttribute("aria-pressed",ST.bgm);$("vidBtn").setAttribute("aria-pressed",ST.vid)}
+function renderToggles(){$("bgmBtn").textContent=ST.bgm?"🎵音楽ON":"🔇音楽OFF";$("vidBtn").textContent=ST.vid?"🎬動画ON":"🎬動画OFF";$("bgmBtn").setAttribute("aria-pressed",ST.bgm);$("vidBtn").setAttribute("aria-pressed",ST.vid)}
 const setFlag=(k,v)=>{ST[k]=!!v;try{localStorage.setItem(LSK[k],ST[k]?"1":"0")}catch(e){}renderToggles()};
 $("bgmBtn").onclick=e=>{e.stopPropagation();setFlag("bgm",!ST.bgm);startBGM();if(bgmG)bgmG.gain.setTargetAtTime(bgmGain(),AC.currentTime,.05)};
 $("vidBtn").onclick=e=>{e.stopPropagation();setFlag("vid",!ST.vid);if(ST.vid){const v=$("vid");v.muted=true;const p=v.play();if(p&&p.then)p.then(()=>{v.pause();v.currentTime=0}).catch(()=>{})}};
