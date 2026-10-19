@@ -397,7 +397,7 @@ function legStart(){Object.assign(LEG,{on:true,stage:"intro",cycle:1,holds:0,don
 function legEnd(){LEG.on=false;LEG.stage="";LEGLOG.push("LEG end");if(LEG.savedLock)$("lock").checked=true;LEG.savedLock=false}
 function legAfterRush(){const res=$("res");
 if(LEG.stage==="lr"){LEG.stage="collect";LEG.holds=0;LEG.done=0;HOLDQ.length=0;renderHold();lrushScreen();busy=false;LEGLOG.push("collect cycle "+LEG.cycle);if(LEG.savedLock){$("lock").checked=true;LEG.savedLock=false}return true}
-if(LEG.stage==="ur"){LEG.done++;LEGLOG.push("UR done "+LEG.done);if(LEG.done>=LEG_HOLDS){res.innerHTML=`<div class="lrush"><div class="a" style="font-size:12cqw">Congratulation!</div><div class="c">L・RUSH ${LEG_HOLDS}/${LEG_HOLDS} 達成</div></div>`;res.style.display="flex";legFanfare();legStrobe(2000);rain();burst("UR",200);LEGLOG.push("congratulation");
+if(LEG.stage==="ur"){LEG.done++;LEGLOG.push("UR done "+LEG.done);if(LEG.done>=LEG_HOLDS){res.innerHTML=`<div class="lrush"><div class="a" style="font-size:12cqw">Congratulation!</div><div class="c">L・RUSH ${zen(LEG.cycle)}回達成</div></div>`;res.style.display="flex";legFanfare();legStrobe(2000);rain();burst("UR",200);LEGLOG.push("congratulation");
 setTimeout(()=>{legEnd();HOLDQ.length=0;renderHold();res.style.display="none";$("idle").style.display="";busy=false;spin()},4500);return true}
 LEG.stage="spin";legLockFire();res.style.display="none";busy=false;spin();return true}
 return false}
